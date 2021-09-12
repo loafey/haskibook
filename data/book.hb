@@ -1,16 +1,14 @@
 ### blabla blabla
 yooawdawo
 * 2121
-*1 231
-*421 dwa
-
-![Alt text](https://assets.digitalocean.com/articles/alligator/boo.svg "a title")
+* 1 231
+* 421 dwa
 
 ```
-@=lerpPoint
-#=[Point 5 3, Point 10 3]
+@=(\(a,b,f) -> lerpPoint a b f)
+#=[(Point 5 3, Point 10 3, 0.3),(Point 3 12, Point 5412 221, 0.6)]
 
-data Point = Point Float Float
+data Point = Point Float Float deriving Show
 
 lerpPoint :: Point -> Point -> Float -> Point
 lerpPoint (Point x1 y1) (Point x2 y2) f = Point x y
@@ -24,5 +22,5 @@ lerpPoint (Point x1 y1) (Point x2 y2) f = Point x y
 ### blabla blabla
 yooawdawo
 * 2121
-*1 231
-*421 dwa
+* 1 231
+* 421 dwa

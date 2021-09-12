@@ -1,43 +1,43 @@
 module Main where
 
 import System.Environment(getArgs)
-import Lib
-
-data DocumentContent = TextBlock String | CodeBlock String 
-instance Show DocumentContent where
-    show (TextBlock s) = "TB: " ++ s
-    show (CodeBlock s) = "CB: " ++ s
-
-parseHaskibook :: [String]  -> [DocumentContent]
-parseHaskibook lines = p lines [] False  []
-    where
-        p :: [String] -> [String] -> Bool -> [DocumentContent] -> [DocumentContent]
-        p ("```":rest) buffer False dc = p rest buffer True dc
-        p ("```":rest) buffer True  dc = p rest [] False (dc ++ [CodeBlock $ unlines buffer])
-        p (line:rest)  _      False dc = p rest [] False (dc ++ [TextBlock line])
-        p (line:rest)  buffer True  dc = p rest (buffer ++ [line]) True dc
-        p []           buffer False dc = dc
-        p []           _      True  _  = error "Missing end statement on last code block!"
-
-
+import System.Process(readProcessWithExitCode, readProcess)
+import Lib (parseHaskibook, ParsedContent(..))
 
 main :: IO ()
 main = do
     args <- getArgs
     let sourceFile = head args
-    let resultFile = args!!1
+    let resultFile = args !! 1
 
     if null args
         then error  "-!- Missing source file path!"
     else putStrLn $ "--- Opening source file: " ++ sourceFile
 
     content <- readFile sourceFile
-    let l = parseHaskibook $ lines content
+    let pc  =  parseHaskibook $ lines content
 
     if length args < 2
         then error  "-!- Missing result file path!"
     else putStrLn $ "--- Saving to file: " ++ resultFile
 
-    writeFile resultFile "yoa"
+    executed <- executeParsedCode pc
+    writeFile resultFile executed
     
     putStrLn "Done!"
+
+executeParsedCode :: [ParsedContent] -> IO String
+executeParsedCode [] = pure ""
+executeParsedCode (Text s: rest) = do
+    r <- executeParsedCode rest
+    return $ s ++ "\n" ++ r
+executeParsedCode (Code (fn, ds, c): rest) = do
+    r <- executeParsedCode rest
+    let code = c ++ "main = do print $ map show (map " ++ fn ++ " " ++ ds ++ ")"
+    -- TODO implement exitcode check
+    (_, tempFile, _) <- readProcessWithExitCode "mktemp" ["--suffix=.hs"] ""
+    let ghciFile = head $ lines tempFile
+    writeFile ghciFile code
+
+    (_, codeOutput, _) <- readProcessWithExitCode "runhaskell" [ghciFile] ""
+    return $ codeOutput ++ r
