@@ -5,32 +5,24 @@ import System.Process(readProcessWithExitCode, readProcess)
 import Lib (parseHaskibook, ParsedContent(..))
 
 main :: IO ()
-main = do
-    args <- getArgs
-    let sourceFile = head args
-    let resultFile = args !! 1
+main = getArgs >>= checkArgs >>= execute
+    where execute (s,r) = getContent s >>= executeParsedCode >>= writeFile r
 
-    if null args
-        then error  "-!- Missing source file path!"
-    else putStrLn $ "--- Opening source file: " ++ sourceFile
+checkArgs :: [String] -> IO(String, String)
+checkArgs [s,r] = pure (s,r)
+checkArgs []    = error "Missing source file path!"
+checkArgs [_]   = error "Missing result file path!"
+checkArgs (s : (r : _)) = pure (s,r)
 
-    content <- readFile sourceFile
-    let pc  =  parseHaskibook $ lines content
+getContent :: String -> IO [ParsedContent]
+getContent s = readFile s >>= (\x -> pure (parseHaskibook $ lines x))
 
-    if length args < 2
-        then error  "-!- Missing result file path!"
-    else putStrLn $ "--- Saving to file: " ++ resultFile
-
-    executed <- executeParsedCode pc
-    writeFile resultFile executed
-    
-    putStrLn "Done!"
 
 executeParsedCode :: [ParsedContent] -> IO String
 executeParsedCode [] = pure ""
 executeParsedCode (Text s: rest) = do
     r <- executeParsedCode rest
-    return $ s ++ "\n" ++ r
+    return (s ++ "\n" ++ r)
 executeParsedCode (Code (fn, ds, c): rest) = do
     r <- executeParsedCode rest
     let code = c ++ "main = do print $ map show (map " ++ fn ++ " " ++ ds ++ ")"
@@ -40,4 +32,4 @@ executeParsedCode (Code (fn, ds, c): rest) = do
     writeFile ghciFile code
 
     (_, codeOutput, _) <- readProcessWithExitCode "runhaskell" [ghciFile] ""
-    return $ codeOutput ++ r
+    return (codeOutput ++ r)

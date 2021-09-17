@@ -3,10 +3,11 @@ yooawdawo
 * 2121
 * 1 231
 * 421 dwa
+gug
 
 ```
 @=(\(a,b,f) -> lerpPoint a b f)
-#=[(Point 5 3, Point 10 3, 0.3),(Point 3 12, Point 5412 221, 0.6)]
+#=[(Point 5 3, Point 10 3, 0.3),(Point 3 12, Point 5412 221, 0.6), (Point 1321321 3231, Point 21321 232, 0.2)]
 
 data Point = Point Float Float deriving Show
 
